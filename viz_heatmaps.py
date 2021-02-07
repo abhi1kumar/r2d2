@@ -78,7 +78,7 @@ if __name__ == '__main__':
         kpts  = kpts[max_index]
 
     print("No of points = {}".format(kpts.shape[0]))
-    fig = pl.figure("viz")
+    fig = pl.figure("viz",figsize= (10,6))
     kw = dict(cmap=pl.cm.RdYlGn, vmax=1)
     crop = (slice(args.border,-args.border or 1),)*2
     
@@ -124,8 +124,10 @@ if __name__ == '__main__':
         # pl.title('Reliability')
 
     # pl.gcf().set_size_inches(9, 2.73)
-    # pl.subplots_adjust(0.01,0.01,0.99,0.99,hspace=0.1)
-    # pl.savefig(args.out)
+    pl.subplots_adjust(0.01,0.01,0.99,0.99,hspace=0.1)
+    save_path = os.path.join("images_output", os.path.splitext(os.path.basename(args.img))[0] + ".png")
+    print("Saving to {}".format(save_path))
+    pl.savefig(save_path)
     # pdb.set_trace()
-    pl.show()
+    # pl.show()
 
