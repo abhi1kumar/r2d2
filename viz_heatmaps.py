@@ -1,13 +1,12 @@
-import pdb
+
 import os
 import sys
-import tqdm
 
 import numpy as np
 import torch
 
 from PIL import Image
-from matplotlib import pyplot as pl; pl.ion()
+from matplotlib import pyplot as pl
 from scipy.ndimage import uniform_filter
 smooth = lambda arr: uniform_filter(arr, 3)
 
@@ -70,9 +69,15 @@ if __name__ == '__main__':
         res = net(imgs=[norm_RGB(img).unsqueeze(0).to(device)])
         rela = res.get('reliability')
         repe = res.get('repeatability')
-        kpts = detector(**res).T[:,[1,0]]
-        kpts = kpts[repe[0][0,0][kpts[:,1],kpts[:,0]].argsort()[-args.max_kpts:]]
+        kpts = torch.transpose(detector(**res), 0, 1)[:,[1,0]]
+        # For newer pytorch
+        # kpts = kpts[torch.argsort(repe[0][0,0][kpts[:,1],kpts[:,0]])[-args.max_kpts:]]
 
+        # For older pytorch
+        max_index = torch.sort(-repe[0][0,0][kpts[:,1],kpts[:,0]])[1][:args.max_kpts]
+        kpts  = kpts[max_index]
+
+    print("No of points = {}".format(kpts.shape[0]))
     fig = pl.figure("viz")
     kw = dict(cmap=pl.cm.RdYlGn, vmax=1)
     crop = (slice(args.border,-args.border or 1),)*2
@@ -96,27 +101,31 @@ if __name__ == '__main__':
         pl.xticks(()); pl.yticks(())
 
     else:
-        ax1 = pl.subplot(131)
+        ax1 = pl.subplot(211)
         pl.imshow(img[crop], cmap=pl.cm.gray)
         pl.xticks(()); pl.yticks(())
 
         x,y = kpts[:,0:2].cpu().numpy().T - args.border
         pl.plot(x,y,'+',c=(0,1,0),ms=10, scalex=0, scaley=0)
+        pl.title('Keypoints location')
 
-        pl.subplot(132)
+        pl.subplot(212)
         pl.imshow(img[crop], cmap=pl.cm.gray)
         pl.xticks(()); pl.yticks(())
         c = repe[0][0,0].cpu().numpy()
         pl.imshow(transparent(smooth(c)[crop], 0.5, vmin=0, **kw))
+        pl.title('Repeatability')
 
-        ax1 = pl.subplot(133)
-        pl.imshow(img[crop], cmap=pl.cm.gray)
-        pl.xticks(()); pl.yticks(())
-        rela = rela[0][0,0].cpu().numpy()
-        pl.imshow(transparent(rela[crop], 0.5, vmin=0.9, **kw))
+        # ax1 = pl.subplot(133)
+        # pl.imshow(img[crop], cmap=pl.cm.gray)
+        # pl.xticks(()); pl.yticks(())
+        # rela = rela[0][0,0].cpu().numpy()
+        # pl.imshow(transparent(rela[crop], 0.5, vmin=0.9, **kw))
+        # pl.title('Reliability')
 
-    pl.gcf().set_size_inches(9, 2.73)
-    pl.subplots_adjust(0.01,0.01,0.99,0.99,hspace=0.1)
-    pl.savefig(args.out)
-    pdb.set_trace()
+    # pl.gcf().set_size_inches(9, 2.73)
+    # pl.subplots_adjust(0.01,0.01,0.99,0.99,hspace=0.1)
+    # pl.savefig(args.out)
+    # pdb.set_trace()
+    pl.show()
 
